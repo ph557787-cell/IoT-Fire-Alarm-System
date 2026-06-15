@@ -1,0 +1,85 @@
+CREATE TABLE devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(50) NOT NULL UNIQUE,
+    room_name VARCHAR(50) NOT NULL,
+    location_detail VARCHAR(100) DEFAULT NULL,
+    installed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen DATETIME DEFAULT NULL,
+    node_status ENUM('online', 'offline') DEFAULT 'offline'
+);
+
+CREATE TABLE mqtt_topic_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    topic VARCHAR(255) NOT NULL,
+    room_name VARCHAR(50) DEFAULT NULL,
+    metric_name VARCHAR(50) DEFAULT NULL,
+    payload_text TEXT NOT NULL,
+    payload_num DOUBLE DEFAULT NULL,
+    qos TINYINT DEFAULT 0,
+    retained TINYINT(1) DEFAULT 0,
+    received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_mqtt_topic_time
+ON mqtt_topic_history(topic, received_at);
+
+CREATE INDEX idx_mqtt_room_metric_time
+ON mqtt_topic_history(room_name, metric_name, received_at);
+
+CREATE TABLE mqtt_topic_latest (
+    topic VARCHAR(255) PRIMARY KEY,
+    room_name VARCHAR(50) DEFAULT NULL,
+    metric_name VARCHAR(50) DEFAULT NULL,
+    payload_text TEXT NOT NULL,
+    payload_num DOUBLE DEFAULT NULL,
+    qos TINYINT DEFAULT 0,
+    retained TINYINT(1) DEFAULT 0,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE room_state_current (
+    room_name VARCHAR(50) PRIMARY KEY,
+    nhietdo DECIMAL(6,2) DEFAULT NULL,
+    doam DECIMAL(6,2) DEFAULT NULL,
+    gas INT DEFAULT NULL,
+    khoi INT DEFAULT NULL,
+    khoi_raw INT DEFAULT NULL,
+    khoi_tang INT DEFAULT NULL,
+    khoi_nen INT DEFAULT NULL,
+    lua INT DEFAULT NULL,
+    canhbao_muc INT DEFAULT NULL,
+    canhbao_trangthai VARCHAR(50) DEFAULT NULL,
+    muc_canh_bao VARCHAR(50) DEFAULT NULL,
+    trangthai VARCHAR(50) DEFAULT NULL,
+    status VARCHAR(50) DEFAULT NULL,
+    node VARCHAR(50) DEFAULT NULL,
+    device VARCHAR(50) DEFAULT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sensor_readings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    device_id VARCHAR(50) NOT NULL,
+    recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    temperature DECIMAL(6,2) DEFAULT NULL,
+    gas_value INT DEFAULT NULL,
+    smoke_value INT DEFAULT NULL,
+    flame_value INT DEFAULT NULL,
+    system_status ENUM('SAFE', 'WARNING', 'DANGER') NOT NULL DEFAULT 'SAFE',
+    CONSTRAINT fk_sensor_device
+        FOREIGN KEY (device_id) REFERENCES devices(device_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_sensor_device_time
+ON sensor_readings(device_id, recorded_at);
+
+-- Kiểm tra từng bảng
+SELECT * FROM devices;
+SELECT * FROM mqtt_topic_history ORDER BY id DESC LIMIT 20;
+SELECT * FROM mqtt_topic_latest LIMIT 20;
+SELECT * FROM room_state_current;
+SELECT * FROM sensor_readings ORDER BY id DESC LIMIT 20;
